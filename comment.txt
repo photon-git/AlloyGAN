@@ -1,0 +1,8 @@
+python main.py --model GAN --is_train True --download False   --dataroot datasets/BMG/ZrBMG_CD1   --dataset alloys  --epochs 30 --cuda True --batch_size 1
+
+python main.py --model GAN --is_train False --download False   --dataroot datasets/BMG/  --dataset alloys  --epochs 100 --cuda True --batch_size 100 --load_D ./discriminator.pkl --load_G ./generator.pkl
+
+python main.py --model CGAN --is_train True --download False   --dataroot datasets/BMG/   --dataset alloys_c  --epochs 30 --cuda True --batch_size 1
+
+python main.py --model CGAN --is_train False --download False   --dataroot datasets/BMG/  --dataset alloys_c  --epochs 100 --cuda True --batch_size 100 --load_D ./discriminator.pkl --load_G ./generator.pkl
+
