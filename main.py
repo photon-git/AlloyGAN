@@ -4,9 +4,9 @@ from utils.data_loader import get_data_loader
 from models.gan import GAN
 from models.cgan import CGAN
 from models.dcgan import DCGAN_MODEL
-from models.wgan_clipping import WGAN_CP
-from models.wgan_gradient_penalty import WGAN_GP
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 def main(args):
     model = None
@@ -14,28 +14,21 @@ def main(args):
         model = GAN(args)
     elif args.model == 'DCGAN':
         model = DCGAN_MODEL(args)
-    elif args.model == 'WGAN-CP':
-        model = WGAN_CP(args)
-    elif args.model == 'WGAN-GP':
-        model = WGAN_GP(args)
     elif args.model == 'CGAN':
         model = CGAN(args)
     else:
         print("Model type non-existing. Try again.")
         exit(-1)
-#hy
+
     # Load datasets to train and test loaders
     train_loader, test_loader = get_data_loader(args)
-    # x_train_loader, y_train_loader,test_loader = get_data_loader(args)
 
-    #feature_extraction = FeatureExtractionTest(train_loader, test_loader, args.cuda, args.batch_size)
-#hy
+
 
     # Start model training
     if args.is_train == 'True':
         model.train(train_loader)
-    # if args.is_train == 'True':
-    #     model.train(x_train_loader, y_train_loader)
+
 
 
 

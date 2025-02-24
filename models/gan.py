@@ -6,6 +6,8 @@ import torch.nn as nn
 from torchvision import utils
 from torch.autograd import Variable
 from utils.tensorboard_logger import Logger
+import pandas as pd
+from scipy.stats import entropy
 
 
 class GAN(object):
@@ -14,19 +16,20 @@ class GAN(object):
         self.G = nn.Sequential(
             nn.Linear(100, 512),
             nn.LeakyReLU(0.2),
-            # nn.Linear(512, 256),
+            # nn.Linear(512, 64),
             # nn.LeakyReLU(0.2),
-            nn.Linear(512, 8),
-            nn.LeakyReLU(0.2),
+            nn.Linear(512, 40),
+            # nn.LeakyReLU(0.2),
             nn.Sigmoid())
+    
 
         # Discriminator architecture
         self.D = nn.Sequential(
-            nn.Linear(8, 512),
+            nn.Linear(40, 1024),
             nn.LeakyReLU(0.2),
             # nn.Linear(512, 64),
             # nn.LeakyReLU(0.2),
-            nn.Linear(512, 1),
+            nn.Linear(1024, 1),
             nn.Sigmoid())
 
         self.cuda = False
@@ -36,10 +39,10 @@ class GAN(object):
 
         # Binary cross entropy loss and optimizer
         self.loss = nn.BCELoss()
-        self.d_optimizer = torch.optim.Adam(self.D.parameters(), lr=0.0005, weight_decay=0.00001)
-        self.g_optimizer = torch.optim.Adam(self.G.parameters(), lr=0.0005, weight_decay=0.00001)
-        # self.d_optimizer = torch.optim.Adam(self.D.parameters(), lr=0.0005)
-        # self.g_optimizer = torch.optim.Adam(self.G.parameters(), lr=0.0005)
+        self.d_optimizer = torch.optim.Adam(self.D.parameters(), lr=0.0005, weight_decay=0.0001)
+        self.g_optimizer = torch.optim.Adam(self.G.parameters(), lr=0.0005, weight_decay=0.0001)
+        # self.d_optimizer = torch.optim.Adam(self.D.parameters(), lr=0.0001)
+        # self.g_optimizer = torch.optim.Adam(self.G.parameters(), lr=0.001)
 
         # Set the logger
         self.logger = Logger('./logs')
@@ -150,7 +153,7 @@ class GAN(object):
 
                     # (3) Log the images
                     info = {
-                        'real_images': self.to_np(images.view(-1, 1, 8)[:self.number_of_images]),
+                        'real_images': self.to_np(images.view(-1, 1, 40)[:self.number_of_images]),
                         'generated_images': self.generate_img(z, self.number_of_images)
                     }
 
@@ -162,20 +165,12 @@ class GAN(object):
                     print('Generator iter-{}'.format(generator_iter))
                     self.save_model()
 
-                    if not os.path.exists('training_result_images/'):
-                        os.makedirs('training_result_images/')
-
                     # Denormalize images and save them in grid 8x8
                     if self.cuda:
-                        z = Variable(torch.randn(self.batch_size, 100).cuda(self.cuda_index))
+                        z = Variable(torch.randn(177, 100).cuda(self.cuda_index))
                     else:
-                        z = Variable(torch.randn(self.batch_size, 100))
-                    samples = self.G(z)
-                    samples = samples.mul(0.5).add(0.5)
-                    samples = samples.data.cpu()
-                    grid = utils.make_grid(samples)
-                    utils.save_image(grid, 'training_result_images/gan_image_iter_{}.png'.format(
-                        str(generator_iter).zfill(3)))
+                        z = Variable(torch.randn(177, 100))
+
 
         self.t_end = time.time()
         print('Time of training-{}'.format((self.t_end - self.t_begin)))
@@ -190,34 +185,15 @@ class GAN(object):
             z = Variable(torch.randn(self.batch_size, 100))
         samples = self.G(z)
         data = samples.cpu().detach().numpy()
-        file_path = '../GAN_BMG-main/Data analysis/data.txt'
+        file_path = './gen_data.txt'
         np.savetxt(file_path, data, delimiter='\t')
         print(samples)
-        # samples = samples.mul(0.5).add(0.5)
-        # samples = samples.data.cpu()
-        # print(samples)
-    # def evaluate(self, test_loader, D_model_path, G_model_path):
-    #     self.load_model(D_model_path, G_model_path)
-    #     for images in test_loader:
-    #         images = images.view(self.batch_size, -1)
-    #         images = images.to(torch.float32)
-    #         if self.cuda:
-    #             z = Variable(torch.randn(self.batch_size, 100))
-    #             images, z = Variable(images.cuda(self.cuda_index)), Variable(z.cuda(self.cuda_index))
-    #         else:
-    #             z = Variable(torch.randn(self.batch_size, 100))
-    #             images, z = Variable(images), Variable(z)
-    #         samples = self.G(z)
-    #         print(samples,images)
-        # grid = utils.make_grid(samples)
-        # print("Grid of 8x8 images saved to 'gan_model_image.png'.")
-        # utils.save_image(grid, 'gan_model_image.png')
 
     def generate_img(self, z, number_of_images):
         samples = self.G(z).data.cpu().numpy()[:number_of_images]
         generated_images = []
         for sample in samples:
-            generated_images.append(sample.reshape(1,8))
+            generated_images.append(sample.reshape(1,40))
         return generated_images
 
     def to_np(self, x):
